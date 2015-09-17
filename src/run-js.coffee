@@ -12,10 +12,10 @@ child = require('child_process')
 _ = require('lodash')
 
 replaceQuotes = (code) ->
-  code = code.replace('“', '"')
-  code = code.replace('”', '"')
-  code = code.replace('’', '\'')
-  code = code.replace('‘', '\'')
+  code = code.replace(/“/g, '"')
+  code = code.replace(/”/g, '"')
+  code = code.replace(/’/g, '\'')
+  code = code.replace(/‘/g, '\'')
   return code;
 
 setupSandbox = (res, _code) ->
