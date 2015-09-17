@@ -69,5 +69,5 @@ module.exports = (robot) ->
   robot.hear /#run\n```(.*)```/, (res) ->
     setupSandbox(res, res.match[1])
 
-  robot.hear /#run\n```\n([\s\S]*)(?\n)```/, (res) ->
+  robot.hear /#run\n```\n[\s\S]*\n```/, (res) ->
     setupSandbox(res, res.match[1])
