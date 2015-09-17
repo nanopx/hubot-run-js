@@ -25,14 +25,14 @@ setupSandbox = (res, _code) ->
 
   runJS.stdout.on 'data', (buf) ->
     outputData = String(buf).replace(/\n$/, '')
-    console.log(outputData)
-
     if !/__EXEC_TIME__/.test(outputData)
       res.send("> Output:\n```#{outputData}```")
     else
       outputData = outputData.split('\n__EXEC_TIME__: ', '')
+      console.log(outputData)
+
       if outputData.length == 1
-        res.send("> Execution time: `#{outputData}`")
+        res.send("> Execution time: `#{outputData[0]}`")
       else if outputData.length == 2
         res.send("> Output:\n```#{outputData[0]}```")
         res.send("> Execution time: `#{outputData[1]}`")
@@ -56,7 +56,7 @@ setupSandbox = (res, _code) ->
       if !_.isEmpty(msg.usedVariables)
         str += "> Used variables: \n"
         for key, value of msg.usedVariables
-          str += "> `#{key}: #{value}`\n"
+          str += "> `#{key}: #{value} (#{typeof value})`\n"
       res.send(str)
 
   runJS.on 'error', (msg) ->
