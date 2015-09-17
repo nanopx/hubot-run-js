@@ -1,8 +1,8 @@
 {
   "name": "hubot-run-js",
   "description": "A hubot script which runs JavaScript and outputs the result",
-  "version": "0.0.0",
-  "author": "吉武篤司 <0nanopx@gmail.com>",
+  "version": "0.0.1",
+  "author": "nanopx <0nanopx@gmail.com>",
   "license": "MIT",
   "keywords": "hubot, hubot-scripts, js, javascript, JavaScript",
   "repository": {

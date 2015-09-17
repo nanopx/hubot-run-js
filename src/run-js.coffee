@@ -10,16 +10,25 @@
 path = require('path').resolve __dirname, '../lib/jsSandbox.js'
 child = require('child_process')
 
-setupSandbox = (res, code) ->
+replaceQuotes = (code) ->
+  code = code.replace('“', '"')
+  code = code.replace('”', '"')
+  code = code.replace('’', '\'')
+  code = code.replace('‘', '\'')
+  return code;
+
+setupSandbox = (res, _code) ->
+  code = replaceQuotes(_code)
+
   runJS = child.fork(path, [], {silent: true})
 
   runJS.stdout.on 'data', (buf) ->
     outputData = String(buf).replace(/\n$/, '')
     if !/__EXEC_TIME__/.test(outputData)
-      res.send("Result:\n```#{outputData}```")
+      res.send("> Output:\n```#{outputData}```")
     else
       outputData = outputData.replace('__EXEC_TIME__: ', '')
-      res.send("Execution time:\n`#{outputData}`")
+      res.send("> Execution time: `#{outputData}`")
 
   runJS.stderr.on 'data', (buf) ->
     outputData = String(buf).replace(/\n$/, '')
@@ -36,21 +45,27 @@ setupSandbox = (res, code) ->
       res.send(str)
 
     if msg.state == 'success'
-      str = "> Script executed successfully.\nUsed variables: \n"
+      str = "> Script executed successfully.\n"
+      str += "> Used variables: \n"
       for key, value of msg.usedVariables
-        str += "`#{key}: #{value}`\n"
+        str += "> `#{key}: #{value}`\n"
       res.send(str)
 
-
   runJS.on 'error', (msg) ->
-    res.send('ERR->', msg)
+    res.send('> EXECUTION ERROR!')
 
-  runJS.on 'exit', (exitStatus) ->
-    res.send("EXIT-> #{exitStatus}")
+  # runJS.on 'exit', (exitStatus) ->
+  #   res.send("EXIT-> #{exitStatus}")
 
   runJS.send(code)
 
 module.exports = (robot) ->
 
   robot.hear /#run ```(.*)```/, (res) ->
+    setupSandbox(res, res.match[1])
+
+  robot.hear /#run\n```(.*)```/, (res) ->
+    setupSandbox(res, res.match[1])
+
+  robot.hear /#run\n```\n(.*)\n```/, (res) ->
     setupSandbox(res, res.match[1])
