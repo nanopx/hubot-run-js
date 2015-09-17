@@ -9,6 +9,7 @@
 
 path = require('path').resolve __dirname, '../lib/jsSandbox.js'
 child = require('child_process')
+_ = require('lodash')
 
 replaceQuotes = (code) ->
   code = code.replace('“', '"')
@@ -36,7 +37,7 @@ setupSandbox = (res, _code) ->
 
   runJS.on 'message', (msg) ->
     if msg.state == 'initialized'
-      res.send('Initializing script...')
+      res.send('> Initializing script...')
 
     if msg.state == 'error'
       str = "> ERROR: `#{msg.error.name}`\n"
@@ -46,9 +47,10 @@ setupSandbox = (res, _code) ->
 
     if msg.state == 'success'
       str = "> Script executed successfully.\n"
-      str += "> Used variables: \n"
-      for key, value of msg.usedVariables
-        str += "> `#{key}: #{value}`\n"
+      if !_.isEmpty(msg.usedVariables)
+        str += "> Used variables: \n"
+        for key, value of msg.usedVariables
+          str += "> `#{key}: #{value}`\n"
       res.send(str)
 
   runJS.on 'error', (msg) ->
