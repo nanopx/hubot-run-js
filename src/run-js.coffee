@@ -25,11 +25,17 @@ setupSandbox = (res, _code) ->
 
   runJS.stdout.on 'data', (buf) ->
     outputData = String(buf).replace(/\n$/, '')
+    console.log(outputData)
+
     if !/__EXEC_TIME__/.test(outputData)
       res.send("> Output:\n```#{outputData}```")
     else
-      outputData = outputData.replace('__EXEC_TIME__: ', '')
-      res.send("> Execution time: `#{outputData}`")
+      outputData = outputData.split('\n__EXEC_TIME__: ', '')
+      if outputData.length == 1
+        res.send("> Execution time: `#{outputData}`")
+      else if outputData.length == 2
+        res.send("> Output:\n```#{outputData[0]}```")
+        res.send("> Execution time: `#{outputData[1]}`")
 
   runJS.stderr.on 'data', (buf) ->
     outputData = String(buf).replace(/\n$/, '')
@@ -70,5 +76,4 @@ module.exports = (robot) ->
     setupSandbox(res, res.match[1])
 
   robot.hear /#run\n```\n([\s\S]*)\n```/, (res) ->
-    console.log(res.match)
     setupSandbox(res, res.match[1])
