@@ -8,6 +8,7 @@
 #   nanopx <0nanopx@gmail.com>
 
 path = require('path').resolve __dirname, '../lib/jsSandbox.js'
+readline = require('readline')
 child = require('child_process')
 _ = require('lodash')
 
@@ -23,20 +24,26 @@ setupSandbox = (res, _code) ->
 
   runJS = child.fork(path, [], {silent: true})
 
-  runJS.stdout.on 'data', (buf) ->
-    outputData = String(buf).replace(/\n$/, '')
-    if !/__EXEC_TIME__/.test(outputData)
-      res.send("> Output:\n```#{outputData}```")
-    else
-      console.log(1, outputData)
-      outputData = outputData.split('__EXEC_TIME__: ', '')
-      console.log(2, outputData)
+  readline.createInterface(
+    input: runJS.stdout,
+    terminal: false
+  ).on 'line', (line) ->
+    console.log(line)
 
-      if outputData.length == 1
-        res.send("> Execution time: `#{outputData[0]}`")
-      else if outputData.length == 2
-        res.send("> Output:\n```#{outputData[0].replace('\n', '')}```")
-        res.send("> Execution time: `#{outputData[1]}`")
+  # runJS.stdout.on 'data', (buf) ->
+  #   outputData = String(buf).replace(/\n$/, '')
+  #   if !/__EXEC_TIME__/.test(outputData)
+  #     res.send("> Output:\n```#{outputData}```")
+  #   else
+  #     console.log(1, outputData)
+  #     outputData = outputData.split('__EXEC_TIME__: ', '')
+  #     console.log(2, outputData)
+  #
+  #     if outputData.length == 1
+  #       res.send("> Execution time: `#{outputData[0]}`")
+  #     else if outputData.length == 2
+  #       res.send("> Output:\n```#{outputData[0].replace('\n', '')}```")
+  #       res.send("> Execution time: `#{outputData[1]}`")
 
   runJS.stderr.on 'data', (buf) ->
     outputData = String(buf).replace(/\n$/, '')
