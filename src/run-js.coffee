@@ -28,13 +28,14 @@ setupSandbox = (res, _code) ->
     if !/__EXEC_TIME__/.test(outputData)
       res.send("> Output:\n```#{outputData}```")
     else
-      outputData = outputData.split('\n__EXEC_TIME__: ', '')
-      console.log(outputData)
+      console.log(1, outputData)
+      outputData = outputData.split('__EXEC_TIME__: ', '')
+      console.log(2, outputData)
 
       if outputData.length == 1
         res.send("> Execution time: `#{outputData[0]}`")
       else if outputData.length == 2
-        res.send("> Output:\n```#{outputData[0]}```")
+        res.send("> Output:\n```#{outputData[0].replace('\n', '')}```")
         res.send("> Execution time: `#{outputData[1]}`")
 
   runJS.stderr.on 'data', (buf) ->
