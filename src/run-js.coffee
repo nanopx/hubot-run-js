@@ -19,69 +19,63 @@ replaceQuotes = (code) ->
   code = code.replace(/‘/g, '\'')
   return code;
 
-setupSandbox = (res, _code) ->
+setupSandbox = (lines, _code, cb) ->
   code = replaceQuotes(_code)
 
-  runJS = child.fork(path, [], {silent: true})
+  sandbox = child.fork(path, [], {silent: true})
 
-  readline.createInterface(
-    input: runJS.stdout,
+  readline.createInterface
+    input: sandbox.stdout,
     terminal: false
-  ).on 'line', (line) ->
-    console.log(line)
+  .on 'line', (line) ->
+    if !/__EXEC_TIME__/.test(line)
+      lines.push("Output:\n```#{line}```")
+    else
+      lines.push("Execution time: `#{line.replace('__EXEC_TIME__: ', '')}`")
 
-  # runJS.stdout.on 'data', (buf) ->
-  #   outputData = String(buf).replace(/\n$/, '')
-  #   if !/__EXEC_TIME__/.test(outputData)
-  #     res.send("> Output:\n```#{outputData}```")
-  #   else
-  #     console.log(1, outputData)
-  #     outputData = outputData.split('__EXEC_TIME__: ', '')
-  #     console.log(2, outputData)
-  #
-  #     if outputData.length == 1
-  #       res.send("> Execution time: `#{outputData[0]}`")
-  #     else if outputData.length == 2
-  #       res.send("> Output:\n```#{outputData[0].replace('\n', '')}```")
-  #       res.send("> Execution time: `#{outputData[1]}`")
-
-  runJS.stderr.on 'data', (buf) ->
+  sandbox.stderr.on 'data', (buf) ->
     outputData = String(buf).replace(/\n$/, '')
-    res.send("Error:\n```#{outputData}```")
+    lines.push("Error:\n```#{outputData}```")
 
-  runJS.on 'message', (msg) ->
+  sandbox.on 'message', (msg) ->
     if msg.state == 'initialized'
-      res.send('> Initializing script...')
+      lines.push('Initializing script...')
 
     if msg.state == 'error'
-      str = "> ERROR: `#{msg.error.name}`\n"
-      str += "> Message: `#{msg.error.message}`\n"
-      str += "> Stack:\n```#{msg.error.stack}```"
-      res.send(str)
+      str = "Error: `#{msg.error.name}`\n"
+      str += "Message: `#{msg.error.message}`\n"
+      str += "Stack:\n```#{msg.error.stack}```"
+      lines.push(str)
 
     if msg.state == 'success'
-      str = "> Script executed successfully.\n"
+      str = "Script executed successfully.\n"
       if !_.isEmpty(msg.usedVariables)
-        str += "> Used variables: \n"
+        str += "Used variables: \n"
         for key, value of msg.usedVariables
-          str += "> `#{key}: #{value} (#{typeof value})`\n"
-      res.send(str)
+          str += "`#{key}: #{value} (#{typeof value})`\n"
+      lines.push(str)
 
-  runJS.on 'error', (msg) ->
-    res.send('> EXECUTION ERROR!')
+  sandbox.on 'error', (msg) ->
+    lines.push('EXECUTION ERROR!')
 
-  # runJS.on 'exit', (exitStatus) ->
-  #   res.send("EXIT-> #{exitStatus}")
+  sandbox.on 'exit', (exitStatus) ->
+    cb(null, lines)
+    # lines.push("EXIT-#{exitStatus}")
 
-  runJS.send(code)
+  sandbox.send(code)
+
+runInSandbox = (msg, _code) ->
+  code = replaceQuotes(_code)
+  setupSandbox [], code, (err, lines) ->
+    msg.send(">>> #{lines.join('\n')}")
 
 module.exports = (robot) ->
 
-  robot.hear /#run ```(.*)```/, (res) ->
-    setupSandbox(res, res.match[1])
+  robot.hear /#run ```(.*)```/, (msg) ->
+    runInSandbox(msg, msg.match[1])
 
-  robot.hear /#run\n```(.*)```/, (res) ->
-    setupSandbox(res, res.match[1])
+  robot.hear /#run\n```(.*)```/, (msg) ->
+    runInSandbox(msg, res.match[1])
 
   robot.hear /#run\n```\n([\s\S]*)\n```/, (res) ->
-    setupSandbox(res, res.match[1])
+    runInSandbox(res, res.match[1])
