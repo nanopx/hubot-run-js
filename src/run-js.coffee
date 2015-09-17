@@ -8,7 +8,6 @@
 #   nanopx <0nanopx@gmail.com>
 
 path = require('path').resolve __dirname, '../lib/jsSandbox.js'
-readline = require('readline')
 child = require('child_process')
 _ = require('lodash')
 
@@ -23,11 +22,6 @@ setupSandbox = (lines, _code, cb) ->
   code = replaceQuotes(_code)
 
   sandbox = child.fork(path, [], {silent: true})
-
-  # readline.createInterface
-  #   input: sandbox.stdout,
-  #   terminal: false
-  # .on 'line', (line) ->
 
   sandbox.stdout.on 'data', (buf) ->
     line = String(buf).replace(/\n$/, '')
@@ -57,7 +51,10 @@ setupSandbox = (lines, _code, cb) ->
       if !_.isEmpty(msg.usedVariables)
         str += "Used variables: \n"
         for key, value of msg.usedVariables
-          str += "`#{key}: #{value} (#{typeof value})`\n"
+          if _.isObject(value)
+            str += "`#{key}: #{JSON.stringify(value)} (#{typeof value})`\n"
+          else
+            str += "`#{key}: #{value} (#{typeof value})`\n"
       lines.push(str)
 
   sandbox.on 'error', (msg) ->
