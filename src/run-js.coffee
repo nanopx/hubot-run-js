@@ -24,13 +24,17 @@ setupSandbox = (lines, _code, cb) ->
 
   sandbox = child.fork(path, [], {silent: true})
 
-  readline.createInterface
-    input: sandbox.stdout,
-    terminal: false
-  .on 'line', (line) ->
+  # readline.createInterface
+  #   input: sandbox.stdout,
+  #   terminal: false
+  # .on 'line', (line) ->
+
+  sandbox.stdout.on 'data', (buf) ->
+    line = String(buf).replace(/\n$/, '')
     if !/__EXEC_TIME__/.test(line)
-      lines.push("Output:\n```#{line}```")
+      lines.push(line)
     else
+      lines.push("```")
       lines.push("Execution time: `#{line.replace('__EXEC_TIME__: ', '')}`")
 
   sandbox.stderr.on 'data', (buf) ->
@@ -40,6 +44,7 @@ setupSandbox = (lines, _code, cb) ->
   sandbox.on 'message', (msg) ->
     if msg.state == 'initialized'
       lines.push('Initializing script...')
+      lines.push("Output:\n```")
 
     if msg.state == 'error'
       str = "Error: `#{msg.error.name}`\n"
